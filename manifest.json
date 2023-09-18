@@ -1,0 +1,12 @@
+{
+    "name": "GraphicalTabs",
+    "version": "1.0",
+    "description": "Fancy WebGL-based new tab page (blobs).",
+    "manifest_version": 3,
+    "chrome_url_overrides": {
+        "newtab": "index.html"
+    },
+    "icons": {
+        "512": "icon512.png"
+    }
+}
