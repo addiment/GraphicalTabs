@@ -11,6 +11,9 @@ let gl = canvas.getContext('webgl2', {
     antialias: true
 }); 
 
+let colorA = [0.45, -1.0, 0.4];
+let colorB = [1.0, 0.55, 0.55];
+
 const vertexSource = `#version 300 es
 
 in vec2 a_position;
@@ -36,6 +39,8 @@ out vec4 fragColor;
 in highp vec2 texCoord;
 uniform float time;
 uniform uvec2 viewportSize; 
+uniform vec3 colorA;
+uniform vec3 colorB;
 // uniform vec4 userParam;
 // uniform sampler2D userTexture;
 // uniform sampler2D lightTexture;
@@ -152,8 +157,6 @@ void main() {
     float tmfd = float(time) / 16000.0;
     vec2 goodSize = vec2(viewportSize); 
     vec2 actc = texCoord * (goodSize / min(goodSize.x, goodSize.y));
-    vec3 colorA = vec3(0.3f, 0.1f, 0.8f);
-    vec3 colorB = vec3(0.5f, 0.2f, 1.0f);
     //fragColor = vec4(actc, 0.0, 1.0);
     float fac1 = snoise(vec3(actc * vec2(paramA), tmfd));
     float fac2 = round(snoise(vec3((actc * vec2(paramB)) + vec2(paramC * fac1), tmfd)) * 2.0) / 2.0;
@@ -183,14 +186,14 @@ const uniform = {
     /** @property {GLuint>} */
     viewportSize: null,
     /** @property {GLuint>} */
-    userParam: null,
-    // cursor: null,
+    colorA: null,
+    /** @property {GLuint>} */
+    colorB: null,
+    /** @property {GLuint>} */
+    cursor: null,
     /** @property {GLuint>} */
     time: null,
 };
-
-/** @type {GLuint} */
-let userTexture = null;
 
 let compileTime = Date.now();
 
@@ -247,7 +250,8 @@ function updateShaders() {
     attributeLoc.position = gl.getAttribLocation(shaderProgram, 'a_position');
     attributeLoc.texCoord = gl.getAttribLocation(shaderProgram, 'a_texCoord');
     // uniforms
-    // uniform.userParam = gl.getUniformLocation(shaderProgram, 'userParam');
+    uniform.colorA = gl.getUniformLocation(shaderProgram, 'colorA');
+    uniform.colorB = gl.getUniformLocation(shaderProgram, 'colorB');
     uniform.viewportSize = gl.getUniformLocation(shaderProgram, 'viewportSize');
     uniform.time = gl.getUniformLocation(shaderProgram, 'time');
     compileTime = Date.now() + (Math.random() * 10000);
@@ -300,28 +304,6 @@ function main() {
         0,     // offset into buffer
     );
 
-    // userTexture = gl.createTexture();
-    // gl.bindTexture(gl.TEXTURE_2D, userTexture);
-    // const level = 0;
-    // const internalFormat = gl.RGBA;
-    // const border = 0;
-    // const srcFormat = gl.RGBA;
-    // const srcType = gl.UNSIGNED_BYTE;
-    // // const pixel = new Uint8Array([0, 0, 255, 255]); // opaque blue
-    // gl.texImage2D(
-    //     gl.TEXTURE_2D,
-    //     level,
-    //     internalFormat,
-    //     imge.width,
-    //     imge.height,
-    //     border,
-    //     srcFormat,
-    //     srcType,
-    //     imge
-    // );
-    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-
     requestAnimationFrame(tick);
 }
 
@@ -354,14 +336,11 @@ function tick() {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.useProgram(shaderProgram);
-
-    // gl.bindTexture(gl.TEXTURE_2D, userTexture);
-    // gl.activeTexture(gl.TEXTURE0);
-    // gl.bindTexture(gl.TEXTURE_2D, lightTexture);
-    // gl.activeTexture(gl.TEXTURE1);
-    // gl.uniform4f(uniform.userParam, customX, customY, customZ, customW);
+    
     gl.uniform2ui(uniform.viewportSize, gl.canvas.width, gl.canvas.height);
     gl.uniform1f(uniform.time, Date.now() - compileTime);
+    gl.uniform3f(uniform.colorA, ...colorA);
+    gl.uniform3f(uniform.colorB, ...colorB);
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -378,7 +357,7 @@ function tick() {
 }
 
 function handleResize() {
-    gl.canvas.width = window.innerWidth * window.devicePixelRatio;
+    gl.canvas.width  = window.innerWidth  * window.devicePixelRatio;
     gl.canvas.height = window.innerHeight * window.devicePixelRatio;
 }
 
