@@ -378,8 +378,8 @@ function tick() {
 }
 
 function handleResize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = Math.floor(window.innerWidth * window.devicePixelRatio);
+    canvas.height = Math.floor(window.innerHeight * window.devicePixelRatio);
 }
 
 window.addEventListener('resize', handleResize);
