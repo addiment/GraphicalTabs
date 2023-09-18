@@ -378,8 +378,8 @@ function tick() {
 }
 
 function handleResize() {
-    canvas.width = Math.floor(window.innerWidth * window.devicePixelRatio);
-    canvas.height = Math.floor(window.innerHeight * window.devicePixelRatio);
+    gl.canvas.width = window.innerWidth * window.devicePixelRatio;
+    gl.canvas.height = window.innerHeight * window.devicePixelRatio;
 }
 
 window.addEventListener('resize', handleResize);
