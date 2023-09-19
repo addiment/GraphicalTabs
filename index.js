@@ -163,7 +163,7 @@ void main() {
     float paramA = 6.f;
     float paramB = 1.f;
     float paramC = 4.f;
-    float tmfd = float(time) / 16000.0;
+    float tmfd = float(time) / 16.0; 
     // convert const uvec2 to vec2
     vec2 goodSize = vec2(viewportSize);
     float minAx = min(goodSize.x, goodSize.y);
@@ -255,7 +255,7 @@ const uniform = {
     time: null,
 };
 
-let compileTime = Date.now();
+// let compileTime = Date.now();
 
 let mousePos = {
     x: 0.0,
@@ -325,7 +325,7 @@ function updateShaders() {
     uniform.viewportSize = gl.getUniformLocation(shaderProgram, 'viewportSize');
     uniform.time = gl.getUniformLocation(shaderProgram, 'time');
     uniform.cursor = gl.getUniformLocation(shaderProgram, 'cursor');
-    compileTime = Date.now() + (Math.random() * 10000);
+    // compileTime = Date.now() + (Math.random() * 10000);
 }
 
 function main() {
@@ -394,7 +394,7 @@ function renderPass(program, readBuffer, writeBuffer) {
     
     gl.uniform2ui(uniform.viewportSize, gl.canvas.width, gl.canvas.height);
     gl.uniform2f(uniform.cursor, mouseFramePos.x, mouseFramePos.y);
-    gl.uniform1f(uniform.time, Date.now() - compileTime);
+    gl.uniform1f(uniform.time, (Date.now() / 1000.0) % 32767);
     gl.uniform3f(uniform.colorA, ...colorA);
     gl.uniform3f(uniform.colorB, ...colorB);
 
@@ -434,6 +434,9 @@ function tick() {
     // mouseFramePos = mousePos;
     let dx = mousePos.x - mouseFramePos.x;
     let dy = mousePos.y - mouseFramePos.y;
+    // todo: this algorithm is garbage! rework this entirely
+    // mouseFramePos.x += delta * clamp(Math.abs(dx), 0.0, maxSpeed) * Math.sign(dx);
+    // mouseFramePos.y += delta * clamp(Math.abs(dy), 0.0, maxSpeed) * Math.sign(dy);
     mouseFramePos.x += delta * maxSpeed * dx;
     mouseFramePos.y += delta * maxSpeed * dy;
 
@@ -441,7 +444,7 @@ function tick() {
         mspfCounter.textContent = mspf;
         fpsCounter.textContent = fps;
         lastUpdateTime = Date.now();
-        console.log(mouseFramePos);
+        // console.log(mouseFramePos);
     }
 
     renderPass(shaderProgram, null, null);
@@ -464,16 +467,11 @@ handleResize();
 window.addEventListener('load', main);
 // main();
 
-/** @param {MouseEvent} ev */
+/** @param {PointerEvent} ev */
 function handleSwish(ev) {
     mousePos.x = ev.clientX * window.devicePixelRatio;
     mousePos.y = ev.clientY * window.devicePixelRatio;
 }
 
-/** @param {TouchEvent} ev */
-function handleSwishTouch(ev) {
-
-}
-
-document.addEventListener('mousemove', handleSwish);
-document.addEventListener('touchmove', handleSwishTouch);
+// document.addEventListener('mousemove', handleSwish);
+document.addEventListener('pointermove', handleSwish);
