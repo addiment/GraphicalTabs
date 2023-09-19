@@ -15,6 +15,9 @@ let colorA = [0.45, -1.0, 0.4];
 let colorB = [1.0, 0.55, 0.4];
 
 const vertexSource = `#version 300 es
+#ifdef GL_ES
+precision highp float;
+#endif
 
 in vec2 a_position;
 in vec2 a_texCoord;
@@ -37,12 +40,11 @@ precision highp float;
 out vec4 fragColor;
 in highp vec2 texCoord;
 uniform float time;
+uniform vec2 cursor;
 uniform uvec2 viewportSize; 
 uniform vec3 colorA;
 uniform vec3 colorB;
-// uniform vec4 userParam;
 // uniform sampler2D userTexture;
-// uniform sampler2D lightTexture;
 
 
 //
@@ -162,15 +164,62 @@ void main() {
     float paramB = 1.f;
     float paramC = 4.f;
     float tmfd = float(time) / 16000.0;
-    vec2 goodSize = vec2(viewportSize); 
-    vec2 actc = texCoord * (goodSize / min(goodSize.x, goodSize.y));
-    //fragColor = vec4(actc, 0.0, 1.0);
-    float fac1 = snoiseNormalB(vec3(actc * vec2(paramA), tmfd));
+    // convert const uvec2 to vec2
+    vec2 goodSize = vec2(viewportSize);
+    float minAx = min(goodSize.x, goodSize.y);
+    // aspect-corrected texture coordinate (back in black) 
+    vec2 actc = texCoord * (goodSize / minAx);
+    
+    // vector between cursor and fragment (UV space, aspect/size corrected)
+    vec2 cv2 = ((((texCoord) * goodSize) - cursor) / minAx);
+
+    float radius = 6.0;
+    float force = 0.2;
+    float distExp = 1.1;
+
+    // distance between cursor and fragment (measured in pixels, probably)
+    float cvd = sqrt(pow(cv2.x, 2.0) + pow(cv2.y, 2.0)) * radius;
+    float cvd2 = pow(cvd, distExp);
+    float multiplier = (clamp(1.0 - cvd2, -1.0, 1.0)) * force;
+
+    // vec2 distort = vec2(multiplier * clamp((cv2 * 10.0) + vec2(0.5), -1.0, 1.0));
+    vec2 distort = vec2(multiplier * cv2);
+
+    if (abs(cvd) > 1.0) {
+        distort = vec2(0.0);
+    }
+
+    vec2 distort2 = distort * 1.0;
+    vec2 actc2 = actc + distort2;
+
+    // fragColor = vec4(vec2(abs(cv2.x), abs(cv2.y)), 0.0, 1.0);
+    // fragColor = vec4(vec2(abs(distort.x), abs(distort.y)), 0.0, 1.0);
+    // fragColor = vec4(cvd, 0.0, 0.0, 1.0);
+
+    float fac1 = snoiseNormalB(vec3(actc2 * vec2(paramA), tmfd));
     float fac2 = round(snoiseNormalA(vec3((actc * vec2(paramB)) + vec2(paramC * fac1), tmfd)) * 5.0) / 4.0;
     fragColor = vec4(vec3(mix(colorA, colorB, fac2)), 1.0);
 }
 `
 
+// const distortFragSource = `#version 300 es
+// #ifdef GL_ES
+// precision highp float;
+// #endif
+
+// out vec4 fragColor;
+// in highp vec2 texCoord;
+// uniform float time;
+// uniform uvec2 viewportSize;
+// uniform vec2 mousePos;
+// uniform vec2 mouse
+
+// float radius = 0.2;
+
+// void main() {
+
+// }
+// `;
 
 /** @type {WebGLShader} */
 let vertexShader = null;
@@ -182,6 +231,8 @@ let positionBuffer = null;
 let texCoordBuffer = null;
 /** @type {WebGLBuffer} */
 let indexBuffer = null;
+/** @type {WebGLFramebuffer} */
+let distortFramebuffer = gl.createFramebuffer();
 
 const attributeLoc = {
     /** @property {GLuint>} */
@@ -204,6 +255,16 @@ const uniform = {
 };
 
 let compileTime = Date.now();
+
+let mousePos = {
+    x: 0.0,
+    y: 0.0
+}
+
+let mouseFramePos = {
+    x: 0.0,
+    y: 0.0
+}
 
 const vertices = new Float32Array([
     -1.0, 1.0,  // top left
@@ -262,6 +323,7 @@ function updateShaders() {
     uniform.colorB = gl.getUniformLocation(shaderProgram, 'colorB');
     uniform.viewportSize = gl.getUniformLocation(shaderProgram, 'viewportSize');
     uniform.time = gl.getUniformLocation(shaderProgram, 'time');
+    uniform.cursor = gl.getUniformLocation(shaderProgram, 'cursor');
     compileTime = Date.now() + (Math.random() * 10000);
 }
 
@@ -323,29 +385,14 @@ let lastUpdateTime = 0;
 //     mspf: 0
 // };
 
-function tick() {
-    let mspf = Date.now() - lastTickTime;
-    let fps = Math.floor(1000 / mspf);
-    lastTickTime = Date.now();
-    // tickTiming.fps += fps;
-    // tickTiming.mspf += mspf;
+function renderPass(program, readBuffer, writeBuffer) {
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, readBuffer);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, writeBuffer);
 
-    console.log("frame time: ", mspf, `ms (approximately ${fps}fps)`);
-
-    if (lastUpdateTime + 500 <= Date.now()) {
-        mspfCounter.textContent = mspf;
-        fpsCounter.textContent = fps;
-        lastUpdateTime = Date.now();
-    }
-
-    // gl.clearColor(0.125, 0.25, 0.75, 1);
-
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    gl.useProgram(shaderProgram);
+    gl.useProgram(program);
     
     gl.uniform2ui(uniform.viewportSize, gl.canvas.width, gl.canvas.height);
+    gl.uniform2f(uniform.cursor, mouseFramePos.x, mouseFramePos.y);
     gl.uniform1f(uniform.time, Date.now() - compileTime);
     gl.uniform3f(uniform.colorA, ...colorA);
     gl.uniform3f(uniform.colorB, ...colorB);
@@ -358,6 +405,45 @@ function tick() {
         gl.UNSIGNED_SHORT, // type of indices
         0,                 // offset on bytes to indices
     );
+}
+
+function clamp(x, min, max) {
+    return ((x < min) ? min : ((x > max) ? max : min));
+}
+
+function easeInOut(x, a, b) {
+    let cx = clamp(x, 0.0, 1.0);
+    console.log("x:", x, "a:", a, "b:", b, "cx:", cx);
+    let fac = (Math.cos(cx * Math.PI) / -2) + 0.5;
+    // console.log("fac:", fac);
+    return (a * (1.0 - fac)) + (b * fac);
+}
+
+function tick() {
+    let mspf = Date.now() - lastTickTime;
+    let fps = Math.floor(1000 / mspf);
+    lastTickTime = Date.now();
+    // tickTiming.fps += fps;
+    // tickTiming.mspf += mspf;
+
+    // console.log("frame time: ", mspf, `ms (approximately ${fps}fps)`);
+
+    mouseFramePos = mousePos;
+    // todo: this algorithm is garbage! rework this entirely
+    // mouseFramePos.x = easeInOut(50 * (mspf / 1000), mouseFramePos.x, mousePos.x);
+    // mouseFramePos.y = easeInOut(50 * (mspf / 1000), mouseFramePos.y, mousePos.y);
+
+    if (lastUpdateTime + 500 <= Date.now()) {
+        mspfCounter.textContent = mspf;
+        fpsCounter.textContent = fps;
+        lastUpdateTime = Date.now();
+        console.log(mouseFramePos);
+    }
+
+    renderPass(shaderProgram, null, null);
+
+    // gl.clearColor(0, 0, 0, 1);
+    // gl.clear(gl.COLOR_BUFFER_BIT);
     
     gl.finish();
 
@@ -373,3 +459,17 @@ window.addEventListener('resize', handleResize);
 handleResize();
 window.addEventListener('load', main);
 // main();
+
+/** @param {MouseEvent} ev */
+function handleSwish(ev) {
+    mousePos.x = ev.clientX * window.devicePixelRatio;
+    mousePos.y = ev.clientY * window.devicePixelRatio;
+}
+
+/** @param {TouchEvent} ev */
+function handleSwishTouch(ev) {
+
+}
+
+document.addEventListener('mousemove', handleSwish);
+document.addEventListener('touchmove', handleSwishTouch);
