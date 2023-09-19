@@ -8,6 +8,13 @@ body {
     background-color: #000;
 }
 
+body * {
+    touch-action: pan-x pan-y;
+    -ms-touch-action: pan-x pan-y;
+    -ms-touch-select: none;
+    -webkit-touch-callout: none;
+}
+
 #glcanv {
     display: block;
     margin: 0;

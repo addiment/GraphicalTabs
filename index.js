@@ -3,6 +3,10 @@
 let mspfCounter = document.getElementById('mspf-counter');
 /** @type {HTMLSpanElement} */
 let fpsCounter = document.getElementById('fps-counter');
+/** @type {HTMLSpanElement} */
+let paletteCounter = document.getElementById('palette-counter');
+/** @type {HTMLSpanElement} */
+let resolutionCounter = document.getElementById('resolution-counter');
 
 /** @type {HTMLCanvasElement} */
 const canvas = document.getElementById("glcanv");
@@ -11,8 +15,28 @@ let gl = canvas.getContext('webgl2', {
     antialias: true
 }); 
 
-let colorA = [0.45, -1.0, 0.4];
-let colorB = [1.0, 0.55, 0.4];
+const colorCombos = [
+    [[0.45, -1.0, 0.4],     [1.0, 0.55, 0.4]],
+    [[-0.5, 0.1, 1.0],      [0.0, 0.95, 0.5]],
+    // [[-0.3, -0.6, 0.8],     [1, 0.3, 0.1]   ],
+    [[0.96, 0.8, 1.0],      [0.8, 0.3, -0.3]],
+    [[0.4, 0.6, 1.0],       [-0.5, 0.1, 0.6]],
+]
+/** @type {[number, number, number]} */
+let colorA;
+/** @type {[number, number, number]} */
+let colorB;
+/** @type {number} */
+let palette = Math.round(Math.random() * (colorCombos.length - 1));
+
+function cyclePalette() {
+    palette = (palette + 1) % colorCombos.length;
+    colorA = colorCombos[palette][0];
+    colorB = colorCombos[palette][1];
+    paletteCounter.textContent = palette.toString();
+}
+
+cyclePalette();
 
 const vertexSource = `#version 300 es
 #ifdef GL_ES
@@ -460,6 +484,7 @@ function tick() {
 function handleResize() {
     gl.canvas.width  = window.innerWidth  * window.devicePixelRatio;
     gl.canvas.height = window.innerHeight * window.devicePixelRatio;
+    resolutionCounter.textContent = `${gl.canvas.width}x${gl.canvas.height}`
 }
 
 window.addEventListener('resize', handleResize);
@@ -473,5 +498,11 @@ function handleSwish(ev) {
     mousePos.y = ev.clientY * window.devicePixelRatio;
 }
 
+/** @param {MouseEvent} ev */
+function handlePress() {
+    cyclePalette();
+}
+
 // document.addEventListener('mousemove', handleSwish);
 document.addEventListener('pointermove', handleSwish);
+document.addEventListener('click', handlePress)
