@@ -12,7 +12,7 @@ let gl = canvas.getContext('webgl2', {
 }); 
 
 let colorA = [0.45, -1.0, 0.4];
-let colorB = [1.0, 0.55, 0.55];
+let colorB = [1.0, 0.55, 0.4];
 
 const vertexSource = `#version 300 es
 
@@ -26,7 +26,6 @@ void main() {
     texCoord = a_texCoord;
 }
 `;
-
 
 const fragmentSource = `#version 300 es
 #define PI 3.141592
@@ -150,6 +149,14 @@ float snoise(vec3 v)
                                 dot(p2,x2), dot(p3,x3) ) );
 }
 
+float snoiseNormalA(vec3 v) {
+    return (snoise(v) + 2.0) / 3.0;
+}
+
+float snoiseNormalB(vec3 v) {
+    return (snoise(v) + 0.5) / 1.5;
+}
+
 void main() {
     float paramA = 6.f;
     float paramB = 1.f;
@@ -158,11 +165,12 @@ void main() {
     vec2 goodSize = vec2(viewportSize); 
     vec2 actc = texCoord * (goodSize / min(goodSize.x, goodSize.y));
     //fragColor = vec4(actc, 0.0, 1.0);
-    float fac1 = snoise(vec3(actc * vec2(paramA), tmfd));
-    float fac2 = round(snoise(vec3((actc * vec2(paramB)) + vec2(paramC * fac1), tmfd)) * 2.0) / 2.0;
+    float fac1 = snoiseNormalB(vec3(actc * vec2(paramA), tmfd));
+    float fac2 = round(snoiseNormalA(vec3((actc * vec2(paramB)) + vec2(paramC * fac1), tmfd)) * 5.0) / 4.0;
     fragColor = vec4(vec3(mix(colorA, colorB, fac2)), 1.0);
 }
 `
+
 
 /** @type {WebGLShader} */
 let vertexShader = null;
