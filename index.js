@@ -414,7 +414,7 @@ function clamp(x, min, max) {
 
 function easeInOut(x, a, b) {
     let cx = clamp(x, 0.0, 1.0);
-    console.log("x:", x, "a:", a, "b:", b, "cx:", cx);
+    // console.log("x:", x, "a:", a, "b:", b, "cx:", cx);
     let fac = (Math.cos(cx * Math.PI) / -2) + 0.5;
     // console.log("fac:", fac);
     return (a * (1.0 - fac)) + (b * fac);
@@ -423,16 +423,19 @@ function easeInOut(x, a, b) {
 function tick() {
     let mspf = Date.now() - lastTickTime;
     let fps = Math.floor(1000 / mspf);
+    let delta = mspf / 1000; 
     lastTickTime = Date.now();
     // tickTiming.fps += fps;
     // tickTiming.mspf += mspf;
 
     // console.log("frame time: ", mspf, `ms (approximately ${fps}fps)`);
 
-    mouseFramePos = mousePos;
-    // todo: this algorithm is garbage! rework this entirely
-    // mouseFramePos.x = easeInOut(50 * (mspf / 1000), mouseFramePos.x, mousePos.x);
-    // mouseFramePos.y = easeInOut(50 * (mspf / 1000), mouseFramePos.y, mousePos.y);
+    let maxSpeed = 8;
+    // mouseFramePos = mousePos;
+    let dx = mousePos.x - mouseFramePos.x;
+    let dy = mousePos.y - mouseFramePos.y;
+    mouseFramePos.x += delta * maxSpeed * dx;
+    mouseFramePos.y += delta * maxSpeed * dy;
 
     if (lastUpdateTime + 500 <= Date.now()) {
         mspfCounter.textContent = mspf;
