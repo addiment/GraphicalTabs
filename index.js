@@ -173,31 +173,32 @@ void main() {
     // vector between cursor and fragment (UV space, aspect/size corrected)
     vec2 cv2 = ((((texCoord) * goodSize) - cursor) / minAx);
 
-    float radius = 6.0;
-    float force = 0.2;
-    float distExp = 1.1;
+    float radius = 1.0;
+    float force = 0.25;
+    float force2 = 0.025;
+    float distExp = 0.6;
 
     // distance between cursor and fragment (measured in pixels, probably)
     float cvd = sqrt(pow(cv2.x, 2.0) + pow(cv2.y, 2.0)) * radius;
     float cvd2 = pow(cvd, distExp);
     float multiplier = (clamp(1.0 - cvd2, -1.0, 1.0)) * force;
+    float multiplier2 = (clamp(1.0 - cvd2, -1.0, 1.0)) * force2;
 
-    // vec2 distort = vec2(multiplier * clamp((cv2 * 10.0) + vec2(0.5), -1.0, 1.0));
-    vec2 distort = vec2(multiplier * cv2);
+
+    vec2 actc2 = actc + vec2(multiplier  * cv2);
+    vec2 actc3 = actc + vec2(multiplier2 * cv2);
 
     if (abs(cvd) > 1.0) {
-        distort = vec2(0.0);
+        actc2 = actc;
+        actc3 = actc;
     }
-
-    vec2 distort2 = distort * 1.0;
-    vec2 actc2 = actc + distort2;
 
     // fragColor = vec4(vec2(abs(cv2.x), abs(cv2.y)), 0.0, 1.0);
     // fragColor = vec4(vec2(abs(distort.x), abs(distort.y)), 0.0, 1.0);
     // fragColor = vec4(cvd, 0.0, 0.0, 1.0);
 
-    float fac1 = snoiseNormalB(vec3(actc2 * vec2(paramA), tmfd));
-    float fac2 = round(snoiseNormalA(vec3((actc * vec2(paramB)) + vec2(paramC * fac1), tmfd)) * 5.0) / 4.0;
+    float fac1 = snoiseNormalB(vec3(actc3 * vec2(paramA), tmfd));
+    float fac2 = round(snoiseNormalA(vec3((actc2 * vec2(paramB)) + vec2(paramC * fac1), tmfd)) * 5.0) / 4.0;
     fragColor = vec4(vec3(mix(colorA, colorB, fac2)), 1.0);
 }
 `
