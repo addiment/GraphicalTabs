@@ -505,4 +505,4 @@ function handlePress() {
 
 // document.addEventListener('mousemove', handleSwish);
 document.addEventListener('pointermove', handleSwish);
-document.addEventListener('click', handlePress)
+canvas.addEventListener('click', handlePress)
